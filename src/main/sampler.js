@@ -7,7 +7,7 @@
  * Snapshot shape:
  * {
  *   t: epoch-ms,
- *   cpu: { avg, cores[], ghz, temp|null },
+ *   cpu: { avg, cores[], ghz, temp|null, tempSrc:'cpu'|'aio'|null, tempDev? },
  *   mem: { total, used, avail, pfTotal, pfUsed },
  *   gpu: { util, vramUsed, vramTotal|null, temp|null },
  *   dsk: { drives:[{ fs, size, used, pct }], read, write },
@@ -17,6 +17,7 @@
 const si = require('systeminformation');
 const { EventEmitter } = require('events');
 const { PsCounters } = require('./pscounters');
+const { AioTemp } = require('./aiotemp');
 
 class Sampler extends EventEmitter {
   constructor(intervalMs = 1000) {
@@ -29,6 +30,7 @@ class Sampler extends EventEmitter {
     this.gfxTimer = null;
     this.defaultIface = null;
     this.cpuTempSupported = true;
+    this.aio = null; // AIO coolant-temp fallback, spawned only if the CPU sensor is dead
     this.latest = null;
   }
 
@@ -114,6 +116,20 @@ class Sampler extends EventEmitter {
 
       if (wantTemp && (!temp || temp.main == null)) this.cpuTempSupported = false;
 
+      // CPU die sensor unavailable → fall back to the AIO coolant temperature.
+      let cpuTemp = temp && temp.main != null ? round1(temp.main) : null;
+      let tempSrc = cpuTemp != null ? 'cpu' : null;
+      let tempDev = null;
+      if (cpuTemp == null) {
+        if (!this.aio) { this.aio = new AioTemp(); this.aio.start(); }
+        const a = this.aio.latest;
+        if (a && a.temp != null) {
+          cpuTemp = round1(a.temp);
+          tempSrc = 'aio';
+          tempDev = a.device || null;
+        }
+      }
+
       const psData = this.ps.latest;
       let read = 0, write = 0;
       if (psData) for (const d of psData.disks) { read += d.read; write += d.write; }
@@ -132,7 +148,9 @@ class Sampler extends EventEmitter {
           avg: round1(load.currentLoad),
           cores: load.cpus.map((c) => round1(c.load)),
           ghz: speed ? round2(speed.avg) : null,
-          temp: temp && temp.main != null ? round1(temp.main) : null,
+          temp: cpuTemp,
+          tempSrc,
+          ...(tempDev ? { tempDev } : {}),
         },
         mem: {
           total: mem.total,
@@ -173,6 +191,7 @@ class Sampler extends EventEmitter {
     if (this.gfxTimer) clearInterval(this.gfxTimer);
     this.timer = this.gfxTimer = null;
     this.ps.stop();
+    if (this.aio) { this.aio.stop(); this.aio = null; }
   }
 }
 

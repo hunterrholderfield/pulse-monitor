@@ -60,7 +60,7 @@ window.pulse.onSnapshot((s) => {
   cpuStream.o.intervalMs = sampleIntervalMs;
   cpuStream.push(s.t, [s.cpu.avg]);
   $('cpu-ghz').textContent = s.cpu.ghz != null ? `${s.cpu.ghz.toFixed(2)} GHz` : '—';
-  $('cpu-temp').textContent = s.cpu.temp != null ? `${Math.round(s.cpu.temp)} °C` : 'N/A';
+  renderCpuTemp(s.cpu);
 
   gpuGauge.set(s.gpu.util);
   gpuStream.o.intervalMs = sampleIntervalMs;
@@ -102,6 +102,28 @@ window.pulse.onSnapshot((s) => {
     window.__pulseRendered = true;
   }
 });
+
+// CPU temp may come from the CPU die sensor or, when that is unreadable,
+// from an AIO liquid cooler's coolant sensor — make the source obvious.
+function renderCpuTemp(cpu) {
+  const out = $('cpu-temp');
+  const tile = out.closest('.tile');
+  const label = tile.querySelector('label');
+  if (cpu.temp == null) {
+    out.textContent = 'N/A';
+    label.textContent = 'TEMP';
+    tile.classList.remove('aio-src');
+    tile.title = '';
+    return;
+  }
+  const aio = cpu.tempSrc === 'aio';
+  out.textContent = `${Math.round(cpu.temp)} °C`;
+  label.textContent = aio ? 'COOLANT · AIO' : 'TEMP';
+  tile.classList.toggle('aio-src', aio);
+  tile.title = aio
+    ? `CPU die sensor unavailable — showing coolant temperature from ${cpu.tempDev || 'AIO liquid cooler'}`
+    : '';
+}
 
 function setBar(id, p) {
   const el = $(id);

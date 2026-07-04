@@ -18,9 +18,15 @@ theme, glowing radial gauges, streaming charts, and a scrubbable telemetry archi
 
 \* Temperatures depend on what the hardware exposes: GPU temp comes from
 `nvidia-smi` (NVIDIA cards); CPU package temp uses WMI thermal zones, which many
-consumer boards don't publish — the tile shows `N/A` when unavailable. Running the
-app **as administrator** improves CPU-temp availability. GPU usage/VRAM fall back
-to Windows GPU performance counters, so they work on NVIDIA, AMD, and Intel.
+consumer boards don't publish. Running the app **as administrator** improves
+CPU-temp availability. When the CPU die sensor is unreadable, Pulse falls back to
+the **coolant temperature of an AIO liquid cooler** (Corsair, NZXT Kraken,
+Aquacomputer, MSI CoreLiquid, ASUS Ryujin, …) read from the
+LibreHardwareMonitor / OpenHardwareMonitor WMI namespaces — this requires one of
+those monitoring apps to be running. The tile is relabelled **COOLANT · AIO** so a
+loop temperature is never mistaken for a die temperature; if neither source is
+available it shows `N/A`. GPU usage/VRAM fall back to Windows GPU performance
+counters, so they work on NVIDIA, AMD, and Intel.
 
 Disk read/write throughput and the GPU fallback come from a single persistent
 PowerShell child process reading Windows performance counters (spawning one shell
@@ -64,7 +70,7 @@ Each line is a self-contained snapshot, so the logs are trivially greppable /
 `jq`-able:
 
 ```json
-{"t":1751558400000,"cpu":{"avg":12.4,"cores":[8.1,15.2],"ghz":3.8,"temp":null},
+{"t":1751558400000,"cpu":{"avg":12.4,"cores":[8.1,15.2],"ghz":3.8,"temp":null,"tempSrc":null},
  "mem":{"total":34199306240,"used":18253611008,...},
  "gpu":{"util":7,"vramUsed":1352663040,...},
  "dsk":{"drives":[{"fs":"C:","size":...,"used":...,"pct":62.1}],"read":1048576,"write":524288},
