@@ -6,6 +6,17 @@ theme, glowing radial gauges, streaming charts, and a scrubbable telemetry archi
 
 ![screenshot](docs/screenshot.png)
 
+## Download
+
+Grab the latest Windows build from the
+[**Releases page**](https://github.com/hunterrholderfield/pulse-monitor/releases/latest):
+
+- `Pulse-Setup-<version>.exe` — NSIS installer (installs to your user profile, adds Start-menu shortcut)
+- `Pulse-<version>.exe` — portable build, no installation needed
+
+The binaries are unsigned, so Windows SmartScreen may warn on first run — choose
+**More info → Run anyway**.
+
 ## What it monitors
 
 | Subsystem | Metrics |
