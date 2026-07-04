@@ -6,6 +6,10 @@
   "main": "src/main/main.js",
   "author": "Hunter Holderfield",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hunterrholderfield/pulse-monitor.git"
+  },
   "scripts": {
     "start": "electron .",
     "smoke": "electron . --smoke",
@@ -34,6 +38,12 @@
         "nsis",
         "portable"
       ]
+    },
+    "nsis": {
+      "artifactName": "Pulse-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Pulse-${version}.${ext}"
     }
   }
 }
