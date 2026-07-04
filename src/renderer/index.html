@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <title>Pulse</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="boot">
+    <div class="boot-inner">
+      <div class="boot-logo">PULSE</div>
+      <div class="boot-line"><span id="boot-bar"></span></div>
+      <div class="boot-status" id="boot-status">INITIALIZING TELEMETRY…</div>
+    </div>
+  </div>
+
+  <div id="chrome">
+    <header id="titlebar">
+      <div class="brand">
+        <svg class="ekg" viewBox="0 0 120 28" aria-hidden="true">
+          <polyline points="0,14 28,14 36,14 42,4 50,24 58,8 64,14 120,14" />
+        </svg>
+        <span class="brand-name">PULSE</span>
+        <span class="brand-sub" id="host-line">MISSION CONTROL</span>
+      </div>
+      <nav class="tabs">
+        <button id="tab-live" class="tab active">LIVE</button>
+        <button id="tab-history" class="tab">HISTORY</button>
+      </nav>
+      <div class="right-cluster">
+        <span id="clock" class="clock">--:--:--</span>
+        <button id="btn-settings" class="icon-btn" title="Settings">⚙</button>
+        <div class="win-controls">
+          <button id="win-min" title="Minimize">─</button>
+          <button id="win-max" title="Maximize">▢</button>
+          <button id="win-close" class="close" title="Close">✕</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ══════════ LIVE VIEW ══════════ -->
+    <main id="view-live" class="view">
+      <section class="panel cpu span7" style="--accent:#0891b2; --glow:#38d5f5;">
+        <div class="panel-head">
+          <span class="dot"></span><h2>CPU</h2><span class="panel-sub" id="cpu-model">—</span>
+        </div>
+        <div class="panel-body cpu-grid">
+          <div class="gauge-col">
+            <canvas id="cpu-gauge" class="gauge"></canvas>
+            <div class="tile-row">
+              <div class="tile"><label>CLOCK</label><output id="cpu-ghz">—</output></div>
+              <div class="tile"><label>TEMP</label><output id="cpu-temp">—</output></div>
+            </div>
+          </div>
+          <div class="cpu-right">
+            <div class="mini-label">PER-CORE LOAD</div>
+            <canvas id="cpu-cores" class="cores"></canvas>
+            <div class="mini-label">LOAD · LAST 2 MIN</div>
+            <div class="stream-wrap"><canvas id="cpu-stream" class="stream"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel gpu span5" style="--accent:#d946ef; --glow:#f07dfc;">
+        <div class="panel-head">
+          <span class="dot"></span><h2>GPU</h2><span class="panel-sub" id="gpu-model">—</span>
+        </div>
+        <div class="panel-body gpu-grid">
+          <div class="gauge-col">
+            <canvas id="gpu-gauge" class="gauge"></canvas>
+            <div class="tile-row">
+              <div class="tile"><label>TEMP</label><output id="gpu-temp">—</output></div>
+              <div class="tile"><label>VRAM</label><output id="gpu-vram">—</output></div>
+            </div>
+          </div>
+          <div class="gpu-right">
+            <div class="mini-label">VRAM</div>
+            <div class="hbar" id="gpu-vram-bar"><i></i><em></em></div>
+            <div class="mini-label">UTILIZATION · LAST 2 MIN</div>
+            <div class="stream-wrap"><canvas id="gpu-stream" class="stream"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel mem span4" style="--accent:#059669; --glow:#2fe3a7;">
+        <div class="panel-head">
+          <span class="dot"></span><h2>MEMORY</h2><span class="panel-sub" id="mem-sub">—</span>
+        </div>
+        <div class="panel-body col">
+          <div class="mem-top">
+            <canvas id="mem-gauge" class="gauge small"></canvas>
+            <div class="mem-tiles">
+              <div class="tile"><label>IN USE</label><output id="mem-used">—</output></div>
+              <div class="tile"><label>AVAILABLE</label><output id="mem-avail">—</output></div>
+              <div class="tile"><label>PAGE FILE</label><output id="mem-pf">—</output></div>
+            </div>
+          </div>
+          <div class="mini-label">PAGE FILE</div>
+          <div class="hbar" id="pf-bar"><i></i><em></em></div>
+          <div class="mini-label">USAGE · LAST 2 MIN</div>
+          <div class="stream-wrap"><canvas id="mem-stream" class="stream"></canvas></div>
+        </div>
+      </section>
+
+      <section class="panel dsk span4" style="--accent:#d97706; --glow:#f7b23b;">
+        <div class="panel-head">
+          <span class="dot"></span><h2>STORAGE</h2><span class="panel-sub" id="dsk-sub">—</span>
+        </div>
+        <div class="panel-body col">
+          <div id="drives"></div>
+          <div class="mini-label legend-row">
+            THROUGHPUT · LAST 2 MIN
+            <span class="legend"><i class="swatch solid"></i>READ <i class="swatch dashed"></i>WRITE</span>
+          </div>
+          <div class="stream-wrap"><canvas id="dsk-stream" class="stream"></canvas></div>
+          <div class="tile-row">
+            <div class="tile"><label>READ</label><output id="dsk-read">—</output></div>
+            <div class="tile"><label>WRITE</label><output id="dsk-write">—</output></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel net span4" style="--accent:#6366f1; --glow:#9aa0ff;">
+        <div class="panel-head">
+          <span class="dot"></span><h2>NETWORK</h2><span class="panel-sub" id="net-iface">—</span>
+        </div>
+        <div class="panel-body col">
+          <div class="tile-row">
+            <div class="tile big"><label>▼ DOWN</label><output id="net-rx">—</output></div>
+            <div class="tile big"><label>▲ UP</label><output id="net-tx">—</output></div>
+          </div>
+          <div class="mini-label legend-row">
+            TRAFFIC · LAST 2 MIN
+            <span class="legend"><i class="swatch solid"></i>DOWN <i class="swatch dashed"></i>UP</span>
+          </div>
+          <div class="stream-wrap tall"><canvas id="net-stream" class="stream"></canvas></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ══════════ HISTORY VIEW ══════════ -->
+    <main id="view-history" class="view hidden">
+      <section class="panel history-panel span12" style="--accent:#0891b2; --glow:#38d5f5;">
+        <div class="panel-head">
+          <span class="dot"></span><h2>ARCHIVE PLAYBACK</h2>
+          <span class="panel-sub" id="hist-meta">—</span>
+          <div class="hist-controls">
+            <select id="hist-day"></select>
+            <button id="hist-reload" class="ghost-btn">RELOAD</button>
+          </div>
+        </div>
+        <div class="panel-body col">
+          <div class="mini-label legend-row">
+            UTILIZATION % · FULL RANGE — DRAG TO SCRUB
+            <span class="legend">
+              <i class="swatch" style="background:#0891b2"></i>CPU
+              <i class="swatch" style="background:#d946ef"></i>GPU
+              <i class="swatch" style="background:#059669"></i>RAM
+            </span>
+          </div>
+          <div class="stream-wrap scrub"><canvas id="hist-overview"></canvas></div>
+          <div class="scrub-time" id="scrub-time">—</div>
+
+          <div class="hist-detail" id="hist-detail">
+            <div class="hd-block" style="--accent:#0891b2">
+              <h3>CPU</h3>
+              <output id="hd-cpu">—</output>
+              <canvas id="hd-cores" class="hd-cores"></canvas>
+            </div>
+            <div class="hd-block" style="--accent:#d946ef">
+              <h3>GPU</h3><output id="hd-gpu">—</output><small id="hd-gpu2">—</small>
+            </div>
+            <div class="hd-block" style="--accent:#059669">
+              <h3>MEMORY</h3><output id="hd-mem">—</output><small id="hd-mem2">—</small>
+            </div>
+            <div class="hd-block" style="--accent:#d97706">
+              <h3>STORAGE</h3><output id="hd-dsk">—</output><small id="hd-dsk2">—</small>
+            </div>
+            <div class="hd-block" style="--accent:#6366f1">
+              <h3>NETWORK</h3><output id="hd-net">—</output><small id="hd-net2">—</small>
+            </div>
+          </div>
+          <div class="hist-empty hidden" id="hist-empty">NO ARCHIVE DATA YET — LOGS APPEAR AFTER THE FIRST SNAPSHOTS ARE WRITTEN</div>
+        </div>
+      </section>
+    </main>
+
+    <footer id="statusbar">
+      <span id="status-log">LOGGING —</span>
+      <span id="status-os">—</span>
+      <span id="status-tick" class="tick">● TELEMETRY LIVE</span>
+    </footer>
+  </div>
+
+  <!-- Settings modal -->
+  <div id="modal" class="hidden">
+    <div class="modal-card" style="--accent:#0891b2; --glow:#38d5f5;">
+      <div class="panel-head"><span class="dot"></span><h2>CONFIGURATION</h2></div>
+      <div class="modal-body">
+        <label>Sample interval (ms) <input id="set-sample" type="number" min="500" max="60000" step="100" /></label>
+        <label>Log interval (ms) <input id="set-log" type="number" min="1000" max="3600000" step="500" /></label>
+        <label>Max log file size (MB) <input id="set-size" type="number" min="1" max="1024" /></label>
+        <label>Retention (days) <input id="set-days" type="number" min="1" max="365" /></label>
+        <div class="modal-path"><span>LOG DIRECTORY</span><code id="set-dir">—</code></div>
+        <div class="modal-actions">
+          <button id="set-cancel" class="ghost-btn">CANCEL</button>
+          <button id="set-save" class="ghost-btn primary">APPLY</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tooltip" class="hidden"></div>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <script src="charts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

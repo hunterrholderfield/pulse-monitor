@@ -1,0 +1,38 @@
+{
+  "name": "pulse",
+  "productName": "Pulse",
+  "version": "1.0.0",
+  "description": "Futuristic real-time hardware mission control for Windows",
+  "main": "src/main/main.js",
+  "author": "Hunter Holderfield",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "systeminformation": "^5.23.5"
+  },
+  "build": {
+    "appId": "com.stackon.pulse",
+    "productName": "Pulse",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  }
+}
