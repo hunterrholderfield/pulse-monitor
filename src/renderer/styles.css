@@ -216,6 +216,10 @@ body::before {
 }
 .tile.big output { font-size: 20px; }
 
+/* temp reading sourced from an AIO cooler's coolant sensor, not the CPU die */
+.tile.aio-src { border-left-style: dashed; }
+.tile.aio-src label { color: var(--glow); }
+
 .mini-label {
   font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
   color: var(--ink-3); margin-top: 4px;
