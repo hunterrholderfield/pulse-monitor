@@ -141,7 +141,39 @@ async function runSmokeTest() {
         `document.getElementById('tab-live').click(); true`);
       await new Promise((r) => setTimeout(r, 400));
     } catch { /* history capture is best-effort */ }
-    finish(ok && rendererOk, { rendererOk, historyShot });
+    // exercise the theme/background picker: one capture per preset, with the
+    // settings modal open so the swatches are visible too
+    const themeShots = [], bgShots = [];
+    try {
+      const js = (code) => win.webContents.executeJavaScript(code);
+      const shoot = async (file, list) => {
+        const img = await win.webContents.capturePage();
+        const p = path.join(outDir, file);
+        fs.writeFileSync(p, img.toPNG());
+        list.push(p);
+      };
+      const saved = await js(
+        'JSON.stringify({ t: window.PulseTheme.theme, b: window.PulseTheme.background })');
+      const themes = await js('window.PulseTheme.THEMES.map((t) => t.id)');
+      const bgs = await js('window.PulseTheme.BACKGROUNDS.map((b) => b.id)');
+      await js(`document.getElementById('btn-settings').click(); true`);
+      for (const id of themes) {
+        await js(`window.PulseTheme.setTheme(${JSON.stringify(id)}); true`);
+        await new Promise((r) => setTimeout(r, 400));
+        await shoot(`pulse-smoke-theme-${id}.png`, themeShots);
+      }
+      await js(`window.PulseTheme.setTheme(${JSON.stringify(JSON.parse(saved).t)}); true`);
+      for (const id of bgs) {
+        await js(`window.PulseTheme.setBackground(${JSON.stringify(id)}); true`);
+        await new Promise((r) => setTimeout(r, 250));
+        await shoot(`pulse-smoke-bg-${id}.png`, bgShots);
+      }
+      // restore the user's persisted choices and close the modal
+      await js(`window.PulseTheme.setBackground(${JSON.stringify(JSON.parse(saved).b)});
+        document.getElementById('set-cancel').click(); true`);
+      await new Promise((r) => setTimeout(r, 300));
+    } catch { /* theme capture is best-effort */ }
+    finish(ok && rendererOk, { rendererOk, historyShot, themeShots, bgShots });
   }, 9000);
 }
 

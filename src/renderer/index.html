@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- must run before any content renders: applies saved theme/background
+       attributes so there is no flash of the default look -->
+  <script src="theme.js"></script>
+
   <div id="boot">
     <div class="boot-inner">
       <div class="boot-logo">PULSE</div>
@@ -41,7 +45,7 @@
 
     <!-- ══════════ LIVE VIEW ══════════ -->
     <main id="view-live" class="view">
-      <section class="panel cpu span7" style="--accent:#0891b2; --glow:#38d5f5;">
+      <section class="panel cpu span7">
         <div class="panel-head">
           <span class="dot"></span><h2>CPU</h2><span class="panel-sub" id="cpu-model">—</span>
         </div>
@@ -62,7 +66,7 @@
         </div>
       </section>
 
-      <section class="panel gpu span5" style="--accent:#d946ef; --glow:#f07dfc;">
+      <section class="panel gpu span5">
         <div class="panel-head">
           <span class="dot"></span><h2>GPU</h2><span class="panel-sub" id="gpu-model">—</span>
         </div>
@@ -83,7 +87,7 @@
         </div>
       </section>
 
-      <section class="panel mem span4" style="--accent:#059669; --glow:#2fe3a7;">
+      <section class="panel mem span4">
         <div class="panel-head">
           <span class="dot"></span><h2>MEMORY</h2><span class="panel-sub" id="mem-sub">—</span>
         </div>
@@ -103,7 +107,7 @@
         </div>
       </section>
 
-      <section class="panel dsk span4" style="--accent:#d97706; --glow:#f7b23b;">
+      <section class="panel dsk span4">
         <div class="panel-head">
           <span class="dot"></span><h2>STORAGE</h2><span class="panel-sub" id="dsk-sub">—</span>
         </div>
@@ -121,7 +125,7 @@
         </div>
       </section>
 
-      <section class="panel net span4" style="--accent:#6366f1; --glow:#9aa0ff;">
+      <section class="panel net span4">
         <div class="panel-head">
           <span class="dot"></span><h2>NETWORK</h2><span class="panel-sub" id="net-iface">—</span>
         </div>
@@ -141,7 +145,7 @@
 
     <!-- ══════════ HISTORY VIEW ══════════ -->
     <main id="view-history" class="view hidden">
-      <section class="panel history-panel span12" style="--accent:#0891b2; --glow:#38d5f5;">
+      <section class="panel history-panel span12">
         <div class="panel-head">
           <span class="dot"></span><h2>ARCHIVE PLAYBACK</h2>
           <span class="panel-sub" id="hist-meta">—</span>
@@ -154,30 +158,30 @@
           <div class="mini-label legend-row">
             UTILIZATION % · FULL RANGE — DRAG TO SCRUB
             <span class="legend">
-              <i class="swatch" style="background:#0891b2"></i>CPU
-              <i class="swatch" style="background:#d946ef"></i>GPU
-              <i class="swatch" style="background:#059669"></i>RAM
+              <i class="swatch" style="background:var(--accent-cpu)"></i>CPU
+              <i class="swatch" style="background:var(--accent-gpu)"></i>GPU
+              <i class="swatch" style="background:var(--accent-mem)"></i>RAM
             </span>
           </div>
           <div class="stream-wrap scrub"><canvas id="hist-overview"></canvas></div>
           <div class="scrub-time" id="scrub-time">—</div>
 
           <div class="hist-detail" id="hist-detail">
-            <div class="hd-block" style="--accent:#0891b2">
+            <div class="hd-block cpu">
               <h3>CPU</h3>
               <output id="hd-cpu">—</output>
               <canvas id="hd-cores" class="hd-cores"></canvas>
             </div>
-            <div class="hd-block" style="--accent:#d946ef">
+            <div class="hd-block gpu">
               <h3>GPU</h3><output id="hd-gpu">—</output><small id="hd-gpu2">—</small>
             </div>
-            <div class="hd-block" style="--accent:#059669">
+            <div class="hd-block mem">
               <h3>MEMORY</h3><output id="hd-mem">—</output><small id="hd-mem2">—</small>
             </div>
-            <div class="hd-block" style="--accent:#d97706">
+            <div class="hd-block dsk">
               <h3>STORAGE</h3><output id="hd-dsk">—</output><small id="hd-dsk2">—</small>
             </div>
-            <div class="hd-block" style="--accent:#6366f1">
+            <div class="hd-block net">
               <h3>NETWORK</h3><output id="hd-net">—</output><small id="hd-net2">—</small>
             </div>
           </div>
@@ -195,13 +199,15 @@
 
   <!-- Settings modal -->
   <div id="modal" class="hidden">
-    <div class="modal-card" style="--accent:#0891b2; --glow:#38d5f5;">
+    <div class="modal-card">
       <div class="panel-head"><span class="dot"></span><h2>CONFIGURATION</h2></div>
       <div class="modal-body">
         <label>Sample interval (ms) <input id="set-sample" type="number" min="500" max="60000" step="100" /></label>
         <label>Log interval (ms) <input id="set-log" type="number" min="1000" max="3600000" step="500" /></label>
         <label>Max log file size (MB) <input id="set-size" type="number" min="1" max="1024" /></label>
         <label>Retention (days) <input id="set-days" type="number" min="1" max="365" /></label>
+        <div class="modal-sec"><span>THEME</span><div id="theme-swatches" class="swatch-row"></div></div>
+        <div class="modal-sec"><span>BACKDROP</span><div id="bg-swatches" class="swatch-row"></div></div>
         <div class="modal-path"><span>LOG DIRECTORY</span><code id="set-dir">—</code></div>
         <div class="modal-actions">
           <button id="set-cancel" class="ghost-btn">CANCEL</button>

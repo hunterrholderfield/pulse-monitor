@@ -5,11 +5,28 @@
  * IIFE-wrapped: classic scripts share top-level scope with app.js. */
 (() => {
 
-const INK = '#dbe7f4';
-const INK2 = '#8296ad';
-const INK3 = '#55677d';
-const GRID = 'rgba(90,130,180,0.12)';
 const MONO = '"Cascadia Mono", Consolas, monospace';
+
+/* Active theme colors, sourced from the CSS variables on <body> so
+ * canvases follow [data-theme] switches. Fallbacks match the default theme. */
+const T = {
+  ink: '#dbe7f4', ink2: '#8296ad', ink3: '#55677d',
+  grid: 'rgba(90,130,180,0.12)', surface: '#060a12',
+  track: 'rgba(255,255,255,0.06)', hi: '#38d5f5',
+};
+function refreshTheme() {
+  const cs = getComputedStyle(document.body);
+  const v = (name, fallback) => cs.getPropertyValue(name).trim() || fallback;
+  T.ink = v('--ink', T.ink);
+  T.ink2 = v('--ink-2', T.ink2);
+  T.ink3 = v('--ink-3', T.ink3);
+  T.grid = v('--grid', T.grid);
+  T.surface = v('--surface', T.surface);
+  T.track = v('--track', T.track);
+  T.hi = v('--glow-ui', T.hi);
+}
+refreshTheme();
+window.addEventListener('pulse-theme-changed', refreshTheme);
 
 const tooltipEl = () => document.getElementById('tooltip');
 
@@ -50,12 +67,12 @@ class RadialGauge {
 
     // track
     ctx.lineWidth = 7; ctx.lineCap = 'round';
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = T.track;
     ctx.beginPath(); ctx.arc(cx, cy, R, a0, a1); ctx.stroke();
 
     // ticks
     ctx.save();
-    ctx.strokeStyle = INK3; ctx.lineWidth = 1;
+    ctx.strokeStyle = T.ink3; ctx.lineWidth = 1;
     for (let i = 0; i <= 12; i++) {
       const a = a0 + (a1 - a0) * (i / 12);
       const r1 = R + 9, r2 = R + (i % 3 === 0 ? 15 : 12);
@@ -83,16 +100,16 @@ class RadialGauge {
 
     // center readout — ink text, accent glow
     ctx.textAlign = 'center';
-    ctx.fillStyle = this.value == null ? INK3 : INK;
+    ctx.fillStyle = this.value == null ? T.ink3 : T.ink;
     ctx.shadowColor = this.glow; ctx.shadowBlur = this.value == null ? 0 : 12;
     ctx.font = `600 ${Math.round(R * 0.62)}px ${MONO}`;
     ctx.fillText(this.value == null ? '—' : String(Math.round(this.shown)), cx, cy + R * 0.16);
     ctx.shadowBlur = 0;
     ctx.font = `10px ${MONO}`;
-    ctx.fillStyle = INK2;
+    ctx.fillStyle = T.ink2;
     ctx.fillText(this.unit, cx, cy + R * 0.48);
     if (this.label) {
-      ctx.fillStyle = INK3;
+      ctx.fillStyle = T.ink3;
       ctx.fillText(this.label, cx, cy + R + 18);
     }
   }
@@ -150,13 +167,13 @@ class StreamChart {
     const yOf = (v) => h - 4 - (Math.max(0, v) / max) * (h - 14);
 
     // recessive grid: 3 horizontal lines
-    ctx.strokeStyle = GRID; ctx.lineWidth = 1;
+    ctx.strokeStyle = T.grid; ctx.lineWidth = 1;
     for (let g = 1; g <= 3; g++) {
       const y = 4 + ((h - 14) * g) / 4;
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
     }
     // max label
-    ctx.font = `9px ${MONO}`; ctx.fillStyle = INK3; ctx.textAlign = 'left';
+    ctx.font = `9px ${MONO}`; ctx.fillStyle = T.ink3; ctx.textAlign = 'left';
     ctx.fillText(this.o.fmt(max), 4, 12);
 
     if (this.data.length < 2) return this._drawHover(ctx, w, h, max, xOf, yOf);
@@ -209,7 +226,7 @@ class StreamChart {
     const pt = this.data[best], x = xOf(best);
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(219,231,244,0.35)';
+    ctx.strokeStyle = hexA(T.ink, 0.35);
     ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
     ctx.setLineDash([]);
@@ -220,7 +237,7 @@ class StreamChart {
       ctx.shadowColor = s.glow; ctx.shadowBlur = 8;
       ctx.beginPath(); ctx.arc(x, yOf(v), 3.5, 0, 7); ctx.fill();
       // 2px surface ring so overlapping markers stay separable
-      ctx.shadowBlur = 0; ctx.lineWidth = 2; ctx.strokeStyle = '#060a12';
+      ctx.shadowBlur = 0; ctx.lineWidth = 2; ctx.strokeStyle = T.surface;
       ctx.stroke();
     });
     ctx.restore();
@@ -256,7 +273,7 @@ class CoreBars {
       this.shown[i] += (this.values[i] - this.shown[i]) * 0.2;
       const x = i * (bw + gap);
       // track
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillStyle = T.track;
       ctx.fillRect(x, 0, bw, h - 12);
       // bar, rounded data end, glowing
       const bh = Math.max(2, ((h - 12) * this.shown[i]) / 100);
@@ -267,7 +284,7 @@ class CoreBars {
       ctx.shadowBlur = 0;
     }
     // core index labels, every 4th to stay recessive
-    ctx.fillStyle = INK3; ctx.font = `8px ${MONO}`; ctx.textAlign = 'center';
+    ctx.fillStyle = T.ink3; ctx.font = `8px ${MONO}`; ctx.textAlign = 'center';
     for (let i = 0; i < n; i += n > 16 ? 4 : 2) {
       ctx.fillText(String(i), i * (bw + gap) + bw / 2, h - 2);
     }
@@ -338,8 +355,8 @@ class HistoryChart {
     const Y = (v) => h - 16 - (Math.max(0, Math.min(100, v)) / 100) * (h - 30);
 
     // grid + hour labels
-    ctx.strokeStyle = GRID; ctx.lineWidth = 1;
-    ctx.font = `9px ${MONO}`; ctx.fillStyle = INK3; ctx.textAlign = 'center';
+    ctx.strokeStyle = T.grid; ctx.lineWidth = 1;
+    ctx.font = `9px ${MONO}`; ctx.fillStyle = T.ink3; ctx.textAlign = 'center';
     for (let g = 1; g <= 3; g++) {
       const y = 14 + ((h - 30) * g) / 4;
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
@@ -350,7 +367,7 @@ class HistoryChart {
     for (let tm = firstHour.getTime(); tm <= t1; tm += stepH * 3600000) {
       if (tm < t0) continue;
       const x = X(tm);
-      ctx.strokeStyle = GRID;
+      ctx.strokeStyle = T.grid;
       ctx.beginPath(); ctx.moveTo(x, 8); ctx.lineTo(x, h - 16); ctx.stroke();
       ctx.fillText(new Date(tm).getHours().toString().padStart(2, '0') + ':00', x, h - 4);
     }
@@ -374,7 +391,7 @@ class HistoryChart {
       ctx.stroke();
       if (started) {
         ctx.shadowBlur = 0; ctx.font = `9px ${MONO}`;
-        ctx.fillStyle = INK2;
+        ctx.fillStyle = T.ink2;
         ctx.fillText(' ' + s.label, Math.min(w - 34, w - 32), Math.max(10, Math.min(h - 20, lastY + 3)));
         ctx.fillStyle = s.color;
         ctx.fillRect(Math.min(w - 40, w - 38), Math.max(7, Math.min(h - 23, lastY)), 5, 5);
@@ -386,10 +403,10 @@ class HistoryChart {
     if (this.scrubT != null) {
       const x = X(this.scrubT);
       ctx.save();
-      ctx.strokeStyle = '#38d5f5'; ctx.lineWidth = 1.5;
-      ctx.shadowColor = '#38d5f5'; ctx.shadowBlur = 10;
+      ctx.strokeStyle = T.hi; ctx.lineWidth = 1.5;
+      ctx.shadowColor = T.hi; ctx.shadowBlur = 10;
       ctx.beginPath(); ctx.moveTo(x, 4); ctx.lineTo(x, h - 16); ctx.stroke();
-      ctx.fillStyle = '#38d5f5';
+      ctx.fillStyle = T.hi;
       ctx.beginPath();
       ctx.moveTo(x - 5, 0); ctx.lineTo(x + 5, 0); ctx.lineTo(x, 7); ctx.closePath();
       ctx.fill();

@@ -3,6 +3,8 @@
 
 const { RadialGauge, StreamChart, CoreBars, HistoryChart, fmtBytes } = window.PulseCharts;
 
+/* Per-panel chart colors, sourced from the active theme's CSS variables.
+ * Fallbacks match the default theme in case a variable is missing. */
 const C = {
   cpu: { color: '#0891b2', glow: '#38d5f5' },
   gpu: { color: '#d946ef', glow: '#f07dfc' },
@@ -10,6 +12,14 @@ const C = {
   dsk: { color: '#d97706', glow: '#f7b23b' },
   net: { color: '#6366f1', glow: '#9aa0ff' },
 };
+function readAccents() {
+  const cs = getComputedStyle(document.body);
+  for (const k of Object.keys(C)) {
+    C[k].color = cs.getPropertyValue(`--accent-${k}`).trim() || C[k].color;
+    C[k].glow = cs.getPropertyValue(`--glow-${k}`).trim() || C[k].glow;
+  }
+}
+readAccents();
 
 const $ = (id) => document.getElementById(id);
 const pct = (v) => (v == null ? '—' : `${Math.round(v)}%`);
@@ -46,6 +56,24 @@ const histChart = new HistoryChart($('hist-overview'), {
   ],
 });
 const hdCores = new CoreBars($('hd-cores'), C.cpu);
+
+/* re-color existing chart instances when the theme changes — they copied
+ * their colors at construction, and the render loop redraws every frame */
+window.addEventListener('pulse-theme-changed', () => {
+  readAccents();
+  for (const [g, k] of [[cpuGauge, 'cpu'], [gpuGauge, 'gpu'], [memGauge, 'mem'],
+                        [coreBars, 'cpu'], [hdCores, 'cpu']]) {
+    g.color = C[k].color; g.glow = C[k].glow;
+  }
+  for (const [s, k] of [[cpuStream, 'cpu'], [gpuStream, 'gpu'], [memStream, 'mem'],
+                        [dskStream, 'dsk'], [netStream, 'net']]) {
+    for (const ser of s.o.series) { ser.color = C[k].color; ser.glow = C[k].glow; }
+  }
+  [['cpu', 0], ['gpu', 1], ['mem', 2]].forEach(([k, i]) => {
+    histChart.series[i].color = C[k].color;
+    histChart.series[i].glow = C[k].glow;
+  });
+});
 
 /* ── live snapshot handling ───────────────────────────────────────────── */
 let firstSnap = true;
@@ -256,6 +284,45 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') histChart.step(-1);
   if (e.key === 'ArrowRight') histChart.step(1);
 });
+
+/* ── theme + background picker ────────────────────────────────────────── */
+/* Choices apply and persist immediately (renderer-local, unlike the
+ * main-process settings behind APPLY). Swatch chips show each theme's own
+ * fixed preview colors; backdrop chips render with the active theme. */
+(() => {
+  const { THEMES, BACKGROUNDS, setTheme, setBackground } = window.PulseTheme;
+  const tHost = $('theme-swatches'), bHost = $('bg-swatches');
+
+  tHost.innerHTML = THEMES.map((t) => `
+    <button class="theme-swatch" data-id="${t.id}" title="${t.name}">
+      <span class="chip" style="background:${t.sw.surface}">
+        ${t.sw.accents.map((c) => `<i style="background:${c}"></i>`).join('')}
+      </span><b>${t.name}</b>
+    </button>`).join('');
+  bHost.innerHTML = BACKGROUNDS.map((b) => `
+    <button class="theme-swatch" data-id="${b.id}" title="${b.name}">
+      <span class="chip bgprev bg-${b.id}"></span><b>${b.name}</b>
+    </button>`).join('');
+
+  const syncActive = () => {
+    for (const el of tHost.children) {
+      el.classList.toggle('active', el.dataset.id === window.PulseTheme.theme);
+    }
+    for (const el of bHost.children) {
+      el.classList.toggle('active', el.dataset.id === window.PulseTheme.background);
+    }
+  };
+  tHost.addEventListener('click', (e) => {
+    const btn = e.target.closest('.theme-swatch');
+    if (btn) setTheme(btn.dataset.id);
+  });
+  bHost.addEventListener('click', (e) => {
+    const btn = e.target.closest('.theme-swatch');
+    if (btn) setBackground(btn.dataset.id);
+  });
+  window.addEventListener('pulse-theme-changed', syncActive);
+  syncActive();
+})();
 
 /* ── settings modal ───────────────────────────────────────────────────── */
 $('btn-settings').addEventListener('click', async () => {
